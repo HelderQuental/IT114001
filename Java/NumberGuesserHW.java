@@ -41,7 +41,7 @@ public class NumberGuesserPart4 {
         System.out.println("Uh oh, looks like you need to get some more practice.");
         System.out.println("The correct number was " + number);
         strikes = 0;
-        rightGuess--; //reset of correct guesses if incorrect
+        rightGuess = 0; //reset of correct guesses if incorrect
         level--;
         if (level < 1) {
             level = 1;
@@ -154,6 +154,9 @@ public class NumberGuesserPart4 {
             }
             if (currentStrike()) {
                 system.out.println("You have" + strikes + "strikes be aware!");
+            }
+            if (correctGuess()) {
+                system.out.println("You have" + rightGuess + "correct guesses!");
             }
             number = getNumber(level);
             isRunning = true;
