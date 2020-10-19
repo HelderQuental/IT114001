@@ -6,29 +6,73 @@ import java.net.UnknownHostException;
 import java.util.Scanner;
 
 import utils.Debug;
-//Part 4
-public class SocketClient {
+
+public class SocketClient implements AutoCloseable {
     private Socket server;
     private Thread inputThread;
     private Thread fromServerThread;
+    private String clientName;
 
     public void connect(String address, int port) {
         try {
             server = new Socket(address, port);
             Debug.log("Client connected");
-        } catch (UnknownHostException e) {
+        }
+        catch (UnknownHostException e) {
             e.printStackTrace();
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void readUsername(Scanner si) {
+        System.out.println("Please enter a username and press enter...");
+        clientName = si.nextLine();
+    }
+
+    private Payload buildMessage(String message) {
+        Payload payload = new Payload();
+        payload.setPayloadType(PayloadType.MESSAGE);
+        payload.setClientName(clientName);
+        payload.setMessage(message);
+        return payload;
+    }
+
+    private Payload buildConnectionStatus(String name, boolean isConnect) {
+        Payload payload = new Payload();
+        if (isConnect) {
+            payload.setPayloadType(PayloadType.CONNECT);
+        }
+        else {
+            payload.setPayloadType(PayloadType.DISCONNECT);
+        }
+        payload.setClientName(name);
+        return payload;
+    }
+
+    private void sendPayload(Payload p, ObjectOutputStream out) {
+        try {
+            out.writeObject(p);
+        }
+        catch (IOException e) {
+            // TODO Auto-generated catch block
             e.printStackTrace();
         }
     }
 
     private void listenForKeyboard(Scanner si, ObjectOutputStream out) {
+        if (inputThread != null) {
+            Debug.log("Input Listener is likely already running");
+            return;
+        }
         // Thread to listen for keyboard input so main thread isn't blocked
         inputThread = new Thread() {
             @Override
             public void run() {
                 try {
+                    readUsername(si);
+                    sendPayload(buildConnectionStatus(clientName, true), out);
 
                     while (!server.isClosed()) {
                         Debug.log("Waiting for input");
@@ -36,23 +80,27 @@ public class SocketClient {
                         // terminates
                         if (!"quit".equalsIgnoreCase(line) && line != null) {
                             // grab line and write it to the stream
-                            out.writeObject(line);// technically a String is an object so this works
-                        } else {
+                            sendPayload(buildMessage(line), out);
+                        }
+                        else {
                             Debug.log("Stopping input thread");
                             // we're quitting so tell server we disconnected so it can broadcast
-                            out.writeObject("bye");
+                            sendPayload(buildConnectionStatus(clientName, false), out);
                             break;
                         }
                         try {
                             sleep(50);
-                        } catch (Exception e) {
+                        }
+                        catch (Exception e) {
                             Debug.log("Problem sleeping thread");
                             e.printStackTrace();
                         }
                     }
-                } catch (Exception e) {
+                }
+                catch (Exception e) {
                     e.printStackTrace();
-                } finally {
+                }
+                finally {
                     close();
                     Debug.log("Stopped listening to console input");
                 }
@@ -62,32 +110,60 @@ public class SocketClient {
     }
 
     private void listenForServerMessage(ObjectInputStream in) {
+        if (fromServerThread != null) {
+            Debug.log("Server Listener is likely already running");
+            return;
+        }
         // Thread to listen for responses from server so it doesn't block main thread
         fromServerThread = new Thread() {
             @Override
             public void run() {
                 try {
-                    String fromServer;
-                    // while we're connected, listen for strings from server
-                    while (!server.isClosed() && (fromServer = (String) in.readObject()) != null) {
-                        // keep this one as sysout otherwise if we turn of Debug.log we'll not see
-                        // messages
-                        System.out.println(fromServer);
+                    Payload fromServer;
+                    // while we're connected, listen for Payloads from server
+                    while (!server.isClosed() && (fromServer = (Payload) in.readObject()) != null) {
+                        processPayload(fromServer);
                     }
-                } catch (Exception e) {
+                }
+                catch (Exception e) {
                     if (!server.isClosed()) {
                         e.printStackTrace();
                         Debug.log("Server closed connection");
-                    } else {
+                    }
+                    else {
                         Debug.log("Connection closed");
                     }
-                } finally {
+                }
+                finally {
                     close();
                     Debug.log("Stopped listening to server input");
                 }
             }
         };
         fromServerThread.start();// start the thread
+    }
+
+    /***
+     * Determine any special logic for different PayloadTypes
+     *
+     * @param p
+     */
+    private void processPayload(Payload p) {
+        switch (p.getPayloadType()) {
+            case CONNECT:
+                System.out.println(p.getClientName() + ": " + p.getMessage());
+                break;
+            case DISCONNECT:
+                System.out.println(p.getClientName() + ": " + p.getMessage());
+                break;
+            case MESSAGE:
+                System.out.println(p.getClientName() + ": " + p.getMessage());
+                break;
+            default:
+                Debug.log("Unhandled payload on client: " + p);
+                break;
+
+        }
     }
 
     public void start() throws IOException {
@@ -116,41 +192,46 @@ public class SocketClient {
             Debug.log("Press enter to stop the program");
             // alternatively in this case we could nuke the program with
             // System.exit(0);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             e.printStackTrace();
-        } finally {
+        }
+        finally {
             close();
         }
     }
 
-    private void close() {
+    @Override
+    public void close() {
         if (server != null && !server.isClosed()) {
             try {
                 server.close();
                 Debug.log("Closed socket");
-            } catch (IOException e) {
+            }
+            catch (IOException e) {
                 e.printStackTrace();
             }
         }
     }
 
     public static void main(String[] args) {
-        SocketClient client = new SocketClient();
+
         int port = -1;
         try {
             // not safe but try-catch will get it
             port = Integer.parseInt(args[0]);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             Debug.log("Invalid port");
         }
-        if (port == -1) {
-            return;
-        }
-        client.connect("127.0.0.1", port);
-        try {
-            client.start();
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (port > -1) {
+            try (SocketClient client = new SocketClient();) {
+                client.connect("127.0.0.1", port);
+                client.start();
+            }
+            catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
