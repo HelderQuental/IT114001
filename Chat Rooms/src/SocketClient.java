@@ -106,6 +106,11 @@ public class SocketClient {
                     event.onMessageReceive(p.getClientName(), p.getMessage());
                 }
                 break;
+            case CLEAR_PLAYERS:
+                if (event != null) {
+                    event.onChangeRoom();
+                }
+                break;
             default:
                 log.log(Level.WARNING, "unhandled payload on client" + p);
                 break;

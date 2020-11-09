@@ -7,4 +7,6 @@ public interface Event {
     void onClientDisconnect(String clientName, String message);
 
     void onMessageReceive(String clientName, String message);
+
+    void onChangeRoom();
 }
