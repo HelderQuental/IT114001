@@ -1,13 +1,11 @@
-import client.Event;
-import client.GamePanel;
-import client.SocketClient;
-import client.User;
+package client;
 
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FontMetrics;
+import java.awt.Point;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -25,6 +23,9 @@ import javax.swing.JButton;
 import javax.swing.JEditorPane;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
@@ -41,16 +42,33 @@ public class ClientUI extends JFrame implements Event {
     ClientUI self;
     JPanel textArea;
     JPanel userPanel;
-    List<User> users = new ArrayList<User>();
+    List<client.User> users = new ArrayList<client.User>();
     private final static Logger log = Logger.getLogger(ClientUI.class.getName());
-    Dimension windowSize = new Dimension(800, 400);
-    GamePanel game;
+    Dimension windowSize = Toolkit.getDefaultToolkit().getScreenSize();
+    client.GamePanel game;
+    String username;
+    client.RoomsPanel roomsPanel;
+    JMenuBar menu;
 
     public ClientUI(String title) {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        menu = new JMenuBar();
+        JMenu roomsMenu = new JMenu("Rooms");
+        JMenuItem roomsSearch = new JMenuItem("Search");
+        roomsSearch.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                System.out.println("clicked");
+                goToPanel("rooms");
+            }
+
+        });
+        roomsMenu.add(roomsSearch);
+        menu.add(roomsMenu);
         windowSize.width *= .8;
         windowSize.height *= .8;
         setPreferredSize(windowSize);
+        setSize(windowSize);// This is needed for setLocationRelativeTo()
         setLocationRelativeTo(null);
         self = this;
         setTitle(title);
@@ -58,9 +76,12 @@ public class ClientUI extends JFrame implements Event {
         setLayout(card);
         createConnectionScreen();
         createUserInputScreen();
+
         createPanelRoom();
         createPanelUserList();
-        createDrawingPanel();
+        this.setJMenuBar(menu);
+        // TODO remove
+        createRoomsPanel();
         showUI();
     }
 
@@ -97,7 +118,7 @@ public class ClientUI extends JFrame implements Event {
 
         });
         panel.add(button);
-        this.add(panel);
+        this.add(panel, "login");
     }
 
     void createUserInputScreen() {
@@ -108,20 +129,29 @@ public class ClientUI extends JFrame implements Event {
         panel.add(userLabel);
         panel.add(username);
         JButton button = new JButton("Join");
+        ClientUI self = this;
         button.addActionListener(new ActionListener() {
 
             @Override
             public void actionPerformed(ActionEvent e) {
                 String name = username.getText();
                 if (name != null && name.length() > 0) {
-                    SocketClient.setUsername(name);
+                    // need external ref since "this" context is the action event, not ClientUI
+                    self.username = name;
+                    // this order matters
+                    //createDrawingPanel();
+                    pack();
+                    self.setTitle(self.getTitle() + " - " + self.username);
+                    //game.setPlayerName(self.username);
+                    client.SocketClient.INSTANCE.setUsername(self.username);
+
                     self.next();
                 }
             }
 
         });
         panel.add(button);
-        this.add(panel);
+        this.add(panel, "details");
     }
 
     void createPanelRoom() {
@@ -153,7 +183,7 @@ public class ClientUI extends JFrame implements Event {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (text.getText().length() > 0) {
-                    SocketClient.sendMessage(text.getText());
+                    client.SocketClient.INSTANCE.sendMessage(text.getText());
                     text.setText("");
                 }
             }
@@ -161,7 +191,7 @@ public class ClientUI extends JFrame implements Event {
         });
         input.add(button);
         panel.add(input, BorderLayout.SOUTH);
-        this.add(panel);
+        this.add(panel, "lobby");
     }
 
     void createPanelUserList() {
@@ -179,16 +209,22 @@ public class ClientUI extends JFrame implements Event {
         textArea.getParent().getParent().getParent().add(scroll, BorderLayout.EAST);
     }
 
-    void createDrawingPanel() {
+    /*void createDrawingPanel() {
         game = new GamePanel();
         game.setPreferredSize(new Dimension((int) (windowSize.width * .6), windowSize.height));
         textArea.getParent().getParent().getParent().add(game, BorderLayout.WEST);
-        // TODO remove from here
-        game.attachListeners();
+
+        // TODO unsubscribe when done
+        SocketClient.INSTANCE.registerCallbackListener(game);
+    }*/
+
+    void createRoomsPanel() {
+        roomsPanel = new client.RoomsPanel(this);
+        this.add(roomsPanel, "rooms");
     }
 
     void addClient(String name) {
-        User u = new User(name);
+        client.User u = new client.User(name);
         Dimension p = new Dimension(userPanel.getSize().width, 30);
         u.setPreferredSize(p);
         u.setMinimumSize(p);
@@ -198,7 +234,7 @@ public class ClientUI extends JFrame implements Event {
         pack();
     }
 
-    void removeClient(User client) {
+    void removeClient(client.User client) {
         userPanel.remove(client);
         client.removeAll();
         userPanel.revalidate();
@@ -240,7 +276,7 @@ public class ClientUI extends JFrame implements Event {
         textArea.add(entry);
 
         pack();
-        System.out.println(entry.getSize());
+        // System.out.println(entry.getSize());
         JScrollBar sb = ((JScrollPane) textArea.getParent().getParent()).getVerticalScrollBar();
         sb.setValue(sb.getMaximum());
     }
@@ -253,9 +289,23 @@ public class ClientUI extends JFrame implements Event {
         card.previous(this.getContentPane());
     }
 
+    void goToPanel(String panel) {
+        switch (panel) {
+            case "rooms":
+                // TODO get rooms
+                roomsPanel.removeAllRooms();
+                client.SocketClient.INSTANCE.sendGetRooms(null);
+                break;
+            default:
+                // no need to react
+                break;
+        }
+        card.show(this.getContentPane(), panel);
+    }
+
     void connect(String host, String port) throws IOException {
-        SocketClient.callbackListener(this);
-        SocketClient.connectAndStart(host, port);
+        client.SocketClient.INSTANCE.registerCallbackListener(this);
+        client.SocketClient.INSTANCE.connectAndStart(host, port);
     }
 
     void showUI() {
@@ -279,9 +329,9 @@ public class ClientUI extends JFrame implements Event {
     @Override
     public void onClientDisconnect(String clientName, String message) {
         log.log(Level.INFO, String.format("%s: %s", clientName, message));
-        Iterator<User> iter = users.iterator();
+        Iterator<client.User> iter = users.iterator();
         while (iter.hasNext()) {
-            User u = iter.next();
+            client.User u = iter.next();
             if (u.getName() == clientName) {
                 removeClient(u);
                 iter.remove();
@@ -300,18 +350,33 @@ public class ClientUI extends JFrame implements Event {
 
     @Override
     public void onChangeRoom() {
-        Iterator<User> iter = users.iterator();
+        Iterator<client.User> iter = users.iterator();
         while (iter.hasNext()) {
-            User u = iter.next();
+            client.User u = iter.next();
             removeClient(u);
             iter.remove();
         }
+        goToPanel("lobby");
+    }
+    public void ongetCoin(String clientName, String message) {
+        log.log(Level.INFO, String.format("%s: %s", clientName, message));
+        self.addMessage(String.format("%s: %s", clientName, message));
     }
 
     public static void main(String[] args) {
         ClientUI ui = new ClientUI("My UI");
         if (ui != null) {
             log.log(Level.FINE, "Started");
+        }
+    }
+
+
+    @Override
+    public void onGetRoom(String roomName) {
+        // TODO Auto-generated method stub
+        if (roomsPanel != null) {
+            roomsPanel.addRoom(roomName);
+            pack();
         }
     }
 }

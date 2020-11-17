@@ -5,8 +5,11 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.Iterator;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.Random;
 
 public class ServerThread extends Thread {
     private Socket client;
@@ -79,6 +82,8 @@ public class ServerThread extends Thread {
         return sendPayload(payload);
     }
 
+
+
     protected boolean sendConnectionStatus(String clientName, boolean isConnect, String message) {
         Payload payload = new Payload();
         if (isConnect) {
@@ -96,6 +101,14 @@ public class ServerThread extends Thread {
     protected boolean sendClearList() {
         Payload payload = new Payload();
         payload.setPayloadType(PayloadType.CLEAR_PLAYERS);
+        return sendPayload(payload);
+    }
+
+    protected boolean sendRoom(String room) {
+        Payload payload = new Payload();
+        // using same payload type as a response trigger
+        payload.setPayloadType(PayloadType.GET_ROOMS);
+        payload.setMessage(room);
         return sendPayload(payload);
     }
 
@@ -135,6 +148,27 @@ public class ServerThread extends Thread {
                 break;
             case MESSAGE:
                 currentRoom.sendMessage(this, p.getMessage());
+                break;
+            case CLEAR_PLAYERS:
+                // we currently don't need to do anything since the UI/Client won't be sending
+                // this
+                break;
+            case GET_ROOMS:
+
+                List<String> roomNames = currentRoom.getRoom();
+                Iterator<String> iter = roomNames.iterator();
+                while (iter.hasNext()) {
+                    String room = iter.next();
+                    if (room != null && !room.equalsIgnoreCase(currentRoom.getName())) {
+                        if (!sendRoom(room)) {
+                            // if an error occurs stop spamming
+                            break;
+                        }
+                    }
+                }
+                break;
+            case JOIN_ROOM:
+                currentRoom.joinRoom(p.getMessage(), this);
                 break;
             default:
                 log.log(Level.INFO, "Unhandled payload on server: " + p);
