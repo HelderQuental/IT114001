@@ -3,6 +3,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.Random;
 
 public class Room implements AutoCloseable {
     private static SocketServer server;// used to refer to accessible server functions
@@ -13,9 +14,13 @@ public class Room implements AutoCloseable {
     private final static String COMMAND_TRIGGER = "/";
     private final static String CREATE_ROOM = "createroom";
     private final static String JOIN_ROOM = "joinroom";
+    private final static String FLIP = "flip";
 
     public Room(String name) {
         this.name = name;
+    }
+
+    public Room(String prelobby, boolean b) {
     }
 
     public static void setServer(SocketServer server) {
@@ -32,8 +37,7 @@ public class Room implements AutoCloseable {
         client.setCurrentRoom(this);
         if (clients.indexOf(client) > -1) {
             log.log(Level.INFO, "Attempting to add a client that already exists");
-        }
-        else {
+        } else {
             clients.add(client);
             if (client.getClientName() != null) {
                 client.sendClearList();
@@ -58,8 +62,7 @@ public class Room implements AutoCloseable {
         if (clients.size() > 0) {
             // sendMessage(client, "left the room");
             sendConnectionStatus(client, false, "left the room " + getName());
-        }
-        else {
+        } else {
             cleanupEmptyRoom();
         }
     }
@@ -72,8 +75,7 @@ public class Room implements AutoCloseable {
         try {
             log.log(Level.INFO, "Closing empty room: " + name);
             close();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
@@ -121,9 +123,16 @@ public class Room implements AutoCloseable {
                         wasCommand = true;
                         break;
                 }
+                String coinFlip;
+                switch (command) {
+                    case FLIP:
+                        coinFlip = comm[1];
+                        if (server.Coin(coinFlip));
+                        wasCommand = true;
+                        break;
+                }
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return wasCommand;
@@ -190,4 +199,7 @@ public class Room implements AutoCloseable {
         // should be eligible for garbage collection now
     }
 
+    public List<String> getRoom() {
+        return server.getRooms();
+    }
 }
