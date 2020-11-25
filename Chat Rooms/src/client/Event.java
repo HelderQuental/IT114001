@@ -10,7 +10,7 @@ public interface Event {
 
     void onChangeRoom();
 
-    void ongetCoin();
+    //void ongetFlip();
 
     void onGetRoom(String roomName);
 }
