@@ -142,15 +142,15 @@ public enum SocketClient {
             }
         }
     }
-    private void sendCoin(String coinflip) {
+   /* private void sendFlip() {
         Iterator<Event> iter = events.iterator();
         while (iter.hasNext()) {
             Event e = iter.next();
             if(e !=null) {
-                e.ongetCoin();
+                e.ongetFlip();
             }
         }
-    }
+    }*/
     /***
      * Determine any special logic for different PayloadTypes
      *
@@ -175,9 +175,7 @@ public enum SocketClient {
                 // reply from ServerThread
                 sendRoom(p.getMessage());
                 break;
-            case FLIP:
-                //coin flip
-                sendCoin(p.getMessage());
+          // case FLIP:
             default:
                 log.log(Level.WARNING, "unhandled payload on client" + p);
                 break;

@@ -96,8 +96,8 @@ public class Room implements AutoCloseable {
      * @param client  The sender of the message (since they'll be the ones
      *                triggering the actions)
      */
-    private boolean processCommands(String message, ServerThread client) {
-        boolean wasCommand = false;
+    private String processCommands(String message, ServerThread client) {
+        String response = null;
         try {
             if (message.indexOf(COMMAND_TRIGGER) > -1) {
                 String[] comm = message.split(COMMAND_TRIGGER);
@@ -115,28 +115,81 @@ public class Room implements AutoCloseable {
                         if (server.createNewRoom(roomName)) {
                             joinRoom(roomName, client);
                         }
-                        wasCommand = true;
+
                         break;
                     case JOIN_ROOM:
                         roomName = comm2[1];
                         joinRoom(roomName, client);
-                        wasCommand = true;
+
+                        break;
+
+                    case FLIP:
+                        int randFlip = (int) ((Math.random() * 2));
+                        if (randFlip == 0) {
+                            response = "you got Heads";
+                            //sendMessage(client, response);
+                            //System.out.println("you got heads");
+                        } else {
+                            response = "You got Tails";
+                            //sendMessage(client, response);
+                        }
                         break;
                 }
-                String coinFlip;
-                switch (command) {
-                    case FLIP:
-                        coinFlip = comm[1];
-                        if (server.Coin(coinFlip));
-                        wasCommand = true;
-                        break;
+            }else{
+
+                response = message;
+                //String alteredMess = message;
+                if (response.indexOf("@@") > -1){
+                    String[] s1 = response.split("@@");
+                    String mess = "";
+                    mess += s1[0];
+                    for (int i = 1; i < s1.length; i ++){
+                        if (i% 2 == 0){
+                            mess += s1[i];
+                        }else{
+                            mess += "<b>" + s1[i] + "</b>";
+                        }
+                        response = mess;
+                    }
+                    //alteredMess = mess;
+                }
+                if (response.indexOf("und") > -1){
+                    String[] s1 = response.split("und");
+                    String mess = "";
+                    mess += s1[0];
+                    for (int i = 1; i < s1.length; i ++){
+                        if (i% 2 == 0){
+                            mess += s1[i];
+                        }else{
+                            mess += "<u>" + s1[i] + "</u>";
+                        }
+                        response = mess;
+                    }
+                    //alteredMess = mess;
+                }
+                if (response.indexOf("colful") > -1){
+                    String[] s1 = response.split("colful");
+                    String mess = "";
+                    mess += s1[0];
+                    for (int i = 1; i < s1.length; i ++){
+                        if (i% 2 == 0){
+                            mess += s1[i];
+                        }else{
+                            mess += "<font color=red>" + s1[i] + "</font>";
+                        }
+                        System.out.println(s1[i]);
+                        response = mess;
+                    }
+                    //alteredMess = mess;
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return wasCommand;
+
+        return response;
     }
+
 
     // TODO changed from string to ServerThread
     protected void sendConnectionStatus(ServerThread client, boolean isConnect, String message) {
@@ -161,10 +214,12 @@ public class Room implements AutoCloseable {
      */
     protected void sendMessage(ServerThread sender, String message) {
         log.log(Level.INFO, getName() + ": Sending message to " + clients.size() + " clients");
-        if (processCommands(message, sender)) {
+        String resp = processCommands(message, sender);
+        if (resp == null) {
             // it was a command, don't broadcast
             return;
         }
+        message = resp;
         Iterator<ServerThread> iter = clients.iterator();
         while (iter.hasNext()) {
             ServerThread client = iter.next();

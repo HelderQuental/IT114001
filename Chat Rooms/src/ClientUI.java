@@ -265,10 +265,12 @@ public class ClientUI extends JFrame implements Event {
 
     void addMessage(String str) {
         JEditorPane entry = new JEditorPane();
+        entry.setContentType("text/html");
         entry.setEditable(false);
         // entry.setLayout(null);
         entry.setText(str);
-        Dimension d = new Dimension(textArea.getSize().width, calcHeightForText(str));
+        int areaWidth = textArea.getSize().width;
+        Dimension d = new Dimension(areaWidth, calcHeightForText(str));
         // attempt to lock all dimensions
         entry.setMinimumSize(d);
         entry.setPreferredSize(d);
@@ -276,6 +278,7 @@ public class ClientUI extends JFrame implements Event {
         textArea.add(entry);
 
         pack();
+        //resizeTexts();
         // System.out.println(entry.getSize());
         JScrollBar sb = ((JScrollPane) textArea.getParent().getParent()).getVerticalScrollBar();
         sb.setValue(sb.getMaximum());
@@ -358,6 +361,10 @@ public class ClientUI extends JFrame implements Event {
         }
         goToPanel("lobby");
     }
+
+
+
+
     public void ongetCoin(String clientName, String message) {
         log.log(Level.INFO, String.format("%s: %s", clientName, message));
         self.addMessage(String.format("%s: %s", clientName, message));

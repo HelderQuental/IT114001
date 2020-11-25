@@ -222,7 +222,7 @@ public class SocketServer {
             return true;
         }
     }
-    protected synchronized boolean Coin (String coinFlip) {
+   /* protected synchronized boolean Coin (String coinFlip) {
         Random randomNum = new Random();
         int result = randomNum.nextInt(2);
         int heads =0;
@@ -235,7 +235,7 @@ public class SocketServer {
         }
 
         return true;
-    }
+    }*/
 
     public static void main(String[] args) {
         // let's allow port to be passed as a command line arg
