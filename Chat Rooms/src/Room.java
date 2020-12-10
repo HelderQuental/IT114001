@@ -1,3 +1,7 @@
+import client.ClientUI;
+import client.SocketClient;
+import client.User;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -15,6 +19,7 @@ public class Room implements AutoCloseable {
     private final static String CREATE_ROOM = "createroom";
     private final static String JOIN_ROOM = "joinroom";
     private final static String FLIP = "flip";
+   private final static String MSG = "msg";
 
     public Room(String name) {
         this.name = name;
@@ -126,15 +131,21 @@ public class Room implements AutoCloseable {
                     case FLIP:
                         int randFlip = (int) ((Math.random() * 2));
                         if (randFlip == 0) {
-                            response = "you got Heads";
+                            response = "you got <b>Heads</b>";
                             //sendMessage(client, response);
                             //System.out.println("you got heads");
                         } else {
-                            response = "You got Tails";
+                            response = "You got <u>Tails</u>";
                             //sendMessage(client, response);
                         }
                         break;
+                    case MSG:
+                        roomName = comm2[1];
+                        response= "<b>someone wants you to join their private channel</b>" + roomName;
+
+
                 }
+
             }else{
 
                 response = message;
@@ -182,6 +193,11 @@ public class Room implements AutoCloseable {
                     }
                     //alteredMess = mess;
                 }
+                //if (response.indexOf("@") > -1){
+                  //  String[] s1 = response.split("@");
+                    //String msg = "";
+
+                //}
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -189,6 +205,25 @@ public class Room implements AutoCloseable {
 
         return response;
     }
+    /*protected void sendPM(ServerThread sender, String message, List<String> User){
+        log.log(Level.INFO, getName() + ":sending message to" + clients.size() + " clients");
+        String resp = processCommands(message, sender);
+        if (resp == null){
+            return;
+        }
+        message = resp;
+        Iterator<ServerThread> iter = clients.iterator();
+
+        while (iter.hasNext()){
+            ServerThread client = iter.next();
+            if (User.contains(client.getClientName())){
+                boolean messageSent = client.send(sender.getClientName(), message);
+                if (!messageSent){
+                    iter.remove();
+                }
+            }
+        }
+    }*/
 
 
     // TODO changed from string to ServerThread

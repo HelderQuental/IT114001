@@ -224,6 +224,7 @@ public enum SocketClient {
     public void sendMessage(String message) {
         sendPayload(buildMessage(message));
     }
+    public void sendPM(String message) { sendPayload(buildMessage(message)); }
 
     public void sendCreateRoom(String room) {
         Payload p = new Payload();
