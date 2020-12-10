@@ -20,6 +20,7 @@ public class ServerThread extends Thread {
     private String clientName;
     private final static Logger log = Logger.getLogger(ServerThread.class.getName());
 
+
     public String getClientName() {
         return clientName;
     }
