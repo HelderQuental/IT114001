@@ -19,7 +19,19 @@ public class Room implements AutoCloseable {
     private final static String CREATE_ROOM = "createroom";
     private final static String JOIN_ROOM = "joinroom";
     private final static String FLIP = "flip";
-   private final static String MSG = "msg";
+    private final static String MSG = "msg";
+    private final String MUTE = "mute";
+    private final String UNMUTE = "unmute";
+
+
+    //testing for user pm
+    /* private Object User;
+   // private Object List;
+
+   // {
+     //   clients = (java.util.List<ServerThread>) User;
+   }*/
+
 
     public Room(String name) {
         this.name = name;
@@ -103,6 +115,7 @@ public class Room implements AutoCloseable {
      */
     private String processCommands(String message, ServerThread client) {
         String response = null;
+        boolean wasCommand = false;
         try {
             if (message.indexOf(COMMAND_TRIGGER) > -1) {
                 String[] comm = message.split(COMMAND_TRIGGER);
@@ -114,6 +127,7 @@ public class Room implements AutoCloseable {
                     command = command.toLowerCase();
                 }
                 String roomName;
+                String clientName;
                 switch (command) {
                     case CREATE_ROOM:
                         roomName = comm2[1];
@@ -139,65 +153,88 @@ public class Room implements AutoCloseable {
                             //sendMessage(client, response);
                         }
                         break;
+                        //Very broken messaging can't seem to figure it out tried numerous ways, part below is a place holder that works sometimes.
                     case MSG:
                         roomName = comm2[1];
-                        response= "<b>someone wants you to join their private channel</b>" + roomName;
+                        response = "<b>someone wants you to join their private channel</b>" + roomName;
+                        break;
+                    /*Mute following a simple calling method to isMuted on serverthread to add clients name to mute list when /mute name used, appears on server but not one client
+                    and no actual effect appears to occur.
+                    case MUTE:
+                        clientName = comm2[1];
+                        if (ServerThread.isMuted(clientName)) {
+                            client.muted.add(clientName);
+                            response = "you've been <b>MUTED<b>";
+                        }
 
+                        break;
+                    case UNMUTE:
+                        clientName = comm2[1];
+                        if (ServerThread.isMuted(clientName)) {
+                            client.muted.remove(clientName);
+                            response = "you've been <b>UNMUTED<b>";
+                        }
 
+                        break;*/
+                    default:
+                        response = message;
+                        break;
                 }
 
-            }else{
+            } else {
 
                 response = message;
                 //String alteredMess = message;
-                if (response.indexOf("@@") > -1){
+                if (response.indexOf("@@") > -1) {
                     String[] s1 = response.split("@@");
                     String mess = "";
                     mess += s1[0];
-                    for (int i = 1; i < s1.length; i ++){
-                        if (i% 2 == 0){
+                    for (int i = 1; i < s1.length; i++) {
+                        if (i % 2 == 0) {
                             mess += s1[i];
-                        }else{
+                        } else {
                             mess += "<b>" + s1[i] + "</b>";
                         }
                         response = mess;
                     }
-                    //alteredMess = mess;
+
                 }
-                if (response.indexOf("und") > -1){
+                if (response.indexOf("und") > -1) {
                     String[] s1 = response.split("und");
                     String mess = "";
                     mess += s1[0];
-                    for (int i = 1; i < s1.length; i ++){
-                        if (i% 2 == 0){
+                    for (int i = 1; i < s1.length; i++) {
+                        if (i % 2 == 0) {
                             mess += s1[i];
-                        }else{
+                        } else {
                             mess += "<u>" + s1[i] + "</u>";
                         }
                         response = mess;
                     }
-                    //alteredMess = mess;
+
                 }
-                if (response.indexOf("colful") > -1){
+                if (response.indexOf("colful") > -1) {
                     String[] s1 = response.split("colful");
                     String mess = "";
                     mess += s1[0];
-                    for (int i = 1; i < s1.length; i ++){
-                        if (i% 2 == 0){
+                    for (int i = 1; i < s1.length; i++) {
+                        if (i % 2 == 0) {
                             mess += s1[i];
-                        }else{
+                        } else {
                             mess += "<font color=red>" + s1[i] + "</font>";
                         }
                         System.out.println(s1[i]);
                         response = mess;
                     }
-                    //alteredMess = mess;
+
                 }
+                //oneattempt of sendPM
                 //if (response.indexOf("@") > -1){
-                  //  String[] s1 = response.split("@");
-                    //String msg = "";
+                //  String[] s1 = response.split("@");
+                //String msg = "";
 
                 //}
+
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -205,7 +242,9 @@ public class Room implements AutoCloseable {
 
         return response;
     }
-    /*protected void sendPM(ServerThread sender, String message, List<String> User){
+
+    //Citation: (Professor Matt Toegel) some of Professor's code shown in class tinkered with to see if could get sendpm/MSG to work
+   /* protected void sendM(ServerThread sender, String message){
         log.log(Level.INFO, getName() + ":sending message to" + clients.size() + " clients");
         String resp = processCommands(message, sender);
         if (resp == null){
@@ -224,7 +263,6 @@ public class Room implements AutoCloseable {
             }
         }
     }*/
-
 
     // TODO changed from string to ServerThread
     protected void sendConnectionStatus(ServerThread client, boolean isConnect, String message) {
@@ -254,6 +292,7 @@ public class Room implements AutoCloseable {
             // it was a command, don't broadcast
             return;
         }
+
         message = resp;
         Iterator<ServerThread> iter = clients.iterator();
         while (iter.hasNext()) {

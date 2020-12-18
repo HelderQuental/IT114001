@@ -10,6 +10,8 @@ import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -192,6 +194,20 @@ public class ClientUI extends JFrame implements Event {
         input.add(button);
         panel.add(input, BorderLayout.SOUTH);
         this.add(panel, "lobby");
+
+
+        //creating button for Export
+        JButton exportChat = new JButton("EXPORT");
+        exportChat.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                exportChat();
+            }
+        });
+        input.add(exportChat);
+
+        panel.add(input, BorderLayout.SOUTH);
+        this.add(panel);
     }
 
     void createPanelUserList() {
@@ -233,6 +249,10 @@ public class ClientUI extends JFrame implements Event {
         users.add(u);
         pack();
     }
+    //unused testing and learning code
+    // public void UserList(List<User> users){
+
+   // }
 
     void removeClient(client.User client) {
         userPanel.remove(client);
@@ -262,6 +282,37 @@ public class ClientUI extends JFrame implements Event {
         mult++;
         return size.height * mult;
     }
+    //creating exportchat file and writing to it
+    void exportChat() {
+        try {
+            File fileCheck = new File("ExportedChat.txt");
+            if(fileCheck.createNewFile()) {
+                System.out.println("File was created");
+            }else {
+                System.out.println("Chat File already exists");
+            }
+        }catch (Exception e) {
+            e.printStackTrace();
+        }
+        //Don't recall where but had assistance with this small snippet
+        //used to append compenents into a string builder
+        StringBuilder sb = new StringBuilder();
+        Component[] text = textArea.getComponents();
+        for(Component comps:text) {
+            JEditorPane editorP = (JEditorPane)comps;
+            if(editorP!=null) {
+                sb.append(editorP.getText()+System.lineSeparator());
+            }
+        } //end of citation
+        try {
+            FileWriter fw = new FileWriter("ExportedChat.txt");
+            fw.write(sb.toString());
+            fw.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
 
     void addMessage(String str) {
         JEditorPane entry = new JEditorPane();

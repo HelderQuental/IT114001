@@ -14,7 +14,7 @@ public class User extends JPanel {
         nameField = new JTextField(name);
         nameField.setEditable(false);
         this.setLayout(new BorderLayout());
-        this.add(nameField);
+        this.add(nameField, BorderLayout.CENTER);
     }
 
     public String getName() {
