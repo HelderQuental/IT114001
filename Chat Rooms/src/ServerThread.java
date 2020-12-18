@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
@@ -19,7 +20,12 @@ public class ServerThread extends Thread {
     private Room currentRoom;// what room we are in, should be lobby by default
     private String clientName;
     private final static Logger log = Logger.getLogger(ServerThread.class.getName());
+    public static List<String> muted = new ArrayList<String>();
 
+    //mute code taken from class when professor was explaining
+    public static boolean isMuted(String clientName){
+        return muted.contains(clientName);
+    }
 
     public String getClientName() {
         return clientName;
